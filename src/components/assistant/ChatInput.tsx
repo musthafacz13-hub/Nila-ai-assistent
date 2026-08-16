@@ -1,5 +1,5 @@
 import { ArrowUp, Mic, Square } from 'lucide-react';
-import React, { FormEvent, KeyboardEvent, useRef, useState, useCallback } from 'react';
+import React, { FormEvent, KeyboardEvent, useRef, useState, useCallback, useEffect } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 
 interface ChatInputProps {
@@ -11,22 +11,33 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const transcriptRef = useRef('');
+  const finalTranscriptRef = useRef('');
 
   const handleSpeechResult = useCallback((text: string, isFinal: boolean) => {
     setInput(text);
     transcriptRef.current = text;
+    if (isFinal) {
+      finalTranscriptRef.current = text;
+    }
   }, []);
 
   const handleSpeechEnd = useCallback(() => {
-    const textToSend = transcriptRef.current.trim();
+    const textToSend = finalTranscriptRef.current.trim();
     if (textToSend && !disabled) {
       console.log('[CHAT] VOICE_MESSAGE_SUBMIT:', textToSend);
       onSend(textToSend);
       setInput('');
       transcriptRef.current = '';
+      finalTranscriptRef.current = '';
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
+    } else {
+      // If recognition ended without a final result, or it ended because 
+      // the UI became disabled (e.g. from a quick action), discard the stale text.
+      setInput('');
+      transcriptRef.current = '';
+      finalTranscriptRef.current = '';
     }
   }, [onSend, disabled]);
 
@@ -43,12 +54,19 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     onEnd: handleSpeechEnd
   });
 
+  useEffect(() => {
+    if (disabled && isListening) {
+      stopListening();
+    }
+  }, [disabled, isListening, stopListening]);
+
   const handleSubmit = useCallback((e?: FormEvent) => {
     e?.preventDefault();
     if (input.trim() && !disabled) {
       const textToSend = input.trim();
       setInput('');
       transcriptRef.current = ''; // Prevent double-send if mic is active
+      finalTranscriptRef.current = '';
       if (isListening) {
         stopListening(); // Stop mic if it was listening
       }

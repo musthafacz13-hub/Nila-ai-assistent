@@ -68,9 +68,12 @@ async function startServer() {
       
       console.log("[CHAT_SUCCESS] Successfully generated reply");
       res.json({ reply });
-    } catch (error) {
+    } catch (error: any) {
       console.error("[CHAT_ERROR] API error:", error);
-      res.status(500).json({ error: "Sorry, I couldn't process that right now. Please try again." });
+      const isMissingKey = error.message?.includes("GEMINI_API_KEY");
+      res.status(500).json({ 
+        error: isMissingKey ? "Server configuration error: Missing Gemini API Key." : "Sorry, I couldn't process that right now. Please try again." 
+      });
     }
   });
 

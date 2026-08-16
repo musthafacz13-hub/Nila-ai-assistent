@@ -41,6 +41,9 @@ export const tts = {
   init: () => {
      if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.getVoices();
+        };
      }
   }
 };

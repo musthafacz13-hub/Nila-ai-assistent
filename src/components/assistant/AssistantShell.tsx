@@ -28,9 +28,11 @@ export function AssistantShell() {
 
   const handlePlay = (id: string, text: string) => {
      setPlayingId(id);
+     const isMalayalam = /[\u0D00-\u0D7F]/.test(text);
+     const langPref = isMalayalam ? 'ml-IN' : 'en-IN';
      tts.speak(text, () => {
         setPlayingId(prev => prev === id ? null : prev);
-     });
+     }, langPref);
   };
 
   const handleStop = () => {
@@ -76,12 +78,12 @@ export function AssistantShell() {
       setMessages((prev) => [...prev, assistantMessage]);
       console.log('[CHAT] ASSISTANT_MESSAGE_ADDED');
       handlePlay(assistantMessage.id, assistantMessage.content);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I couldn\'t process that right now. Please try again.',
+        content: error.message || 'Sorry, I couldn\'t process that right now. Please try again.',
       };
       setMessages((prev) => [...prev, errorMessage]);
       handlePlay(errorMessage.id, errorMessage.content);
