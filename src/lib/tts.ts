@@ -1,11 +1,13 @@
 export const tts = {
   speak: (text: string, onEnd: () => void, langPref = 'ml-IN') => {
     if (!('speechSynthesis' in window)) {
+      console.log('[TTS] TTS_ERROR: speechSynthesis not available');
       onEnd();
       return;
     }
 
     window.speechSynthesis.cancel();
+    console.log('[TTS] TTS_STARTED for text length:', text.length);
 
     const utterance = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
@@ -20,8 +22,14 @@ export const tts = {
       utterance.voice = selectedVoice;
     }
 
-    utterance.onend = onEnd;
-    utterance.onerror = onEnd;
+    utterance.onend = () => {
+      console.log('[TTS] TTS_FINISHED');
+      onEnd();
+    };
+    utterance.onerror = (e) => {
+      console.error('[TTS] TTS_ERROR:', e);
+      onEnd();
+    };
 
     window.speechSynthesis.speak(utterance);
   },

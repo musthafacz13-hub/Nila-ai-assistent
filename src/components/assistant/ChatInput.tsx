@@ -10,26 +10,23 @@ interface ChatInputProps {
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const handleSubmit = useCallback((e?: FormEvent) => {
-    e?.preventDefault();
-    if (input.trim() && !disabled) {
-      onSend(input.trim());
-      setInput('');
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
-    }
-  }, [input, disabled, onSend]);
+  const transcriptRef = useRef('');
 
   const handleSpeechResult = useCallback((text: string, isFinal: boolean) => {
     setInput(text);
-    if (isFinal && text.trim() && !disabled) {
-       onSend(text.trim());
-       setInput('');
-       if (textareaRef.current) {
-         textareaRef.current.style.height = 'auto';
-       }
+    transcriptRef.current = text;
+  }, []);
+
+  const handleSpeechEnd = useCallback(() => {
+    const textToSend = transcriptRef.current.trim();
+    if (textToSend && !disabled) {
+      console.log('[CHAT] VOICE_MESSAGE_SUBMIT:', textToSend);
+      onSend(textToSend);
+      setInput('');
+      transcriptRef.current = '';
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
   }, [onSend, disabled]);
 
@@ -43,8 +40,24 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     error
   } = useSpeechRecognition({
     onResult: handleSpeechResult,
-    onEnd: () => {}
+    onEnd: handleSpeechEnd
   });
+
+  const handleSubmit = useCallback((e?: FormEvent) => {
+    e?.preventDefault();
+    if (input.trim() && !disabled) {
+      const textToSend = input.trim();
+      setInput('');
+      transcriptRef.current = ''; // Prevent double-send if mic is active
+      if (isListening) {
+        stopListening(); // Stop mic if it was listening
+      }
+      onSend(textToSend);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
+    }
+  }, [input, disabled, onSend, isListening, stopListening]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -55,6 +68,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
+    transcriptRef.current = e.target.value; // Keep ref in sync if user types while listening
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;

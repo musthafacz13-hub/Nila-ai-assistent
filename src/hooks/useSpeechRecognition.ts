@@ -32,26 +32,36 @@ export function useSpeechRecognition({ onResult, onEnd }: UseSpeechRecognitionPr
     recognition.interimResults = true;
     
     recognition.onstart = () => {
+      console.log('[VOICE] RECOGNITION_STARTED');
       setIsListening(true);
       setError(null);
     };
 
     recognition.onresult = (event: any) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
+      let fullTranscript = '';
+      let isFinal = false;
+      
+      // Iterate from 0 to get the FULL transcript of the current session
+      for (let i = 0; i < event.results.length; ++i) {
+        fullTranscript += event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        } else {
-          interimTranscript += event.results[i][0].transcript;
+          isFinal = true;
         }
       }
-      onResultRef.current(finalTranscript || interimTranscript, !!finalTranscript);
+      
+      if (isFinal) {
+        console.log('[VOICE] FINAL_TRANSCRIPT:', fullTranscript);
+      } else {
+        console.log('[VOICE] INTERIM_TRANSCRIPT:', fullTranscript);
+      }
+      
+      onResultRef.current(fullTranscript, isFinal);
     };
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        console.log('[VOICE] PERMISSION_DENIED');
         setError('Mic blocked. Try opening in a new tab.');
       } else if (event.error === 'network') {
         setError('Network error during speech recognition.');
@@ -66,6 +76,7 @@ export function useSpeechRecognition({ onResult, onEnd }: UseSpeechRecognitionPr
     };
 
     recognition.onend = () => {
+      console.log('[VOICE] RECOGNITION_ENDED');
       setIsListening(false);
       onEndRef.current();
     };
@@ -87,6 +98,7 @@ export function useSpeechRecognition({ onResult, onEnd }: UseSpeechRecognitionPr
   }, [lang]);
 
   const startListening = useCallback(() => {
+    console.log('[VOICE] MIC_CLICKED (START)');
     if (recognitionRef.current) {
       try {
         recognitionRef.current.start();
@@ -97,6 +109,7 @@ export function useSpeechRecognition({ onResult, onEnd }: UseSpeechRecognitionPr
   }, []);
 
   const stopListening = useCallback(() => {
+    console.log('[VOICE] MIC_CLICKED (STOP)');
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();

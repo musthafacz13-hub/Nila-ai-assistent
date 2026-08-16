@@ -51,6 +51,7 @@ export function AssistantShell() {
     setIsLoading(true);
 
     try {
+      console.log('[CHAT] API_REQUEST_STARTED');
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -60,6 +61,7 @@ export function AssistantShell() {
       });
 
       const data = await response.json();
+      console.log('[CHAT] API_RESPONSE_RECEIVED');
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch response');
@@ -72,6 +74,7 @@ export function AssistantShell() {
       };
       
       setMessages((prev) => [...prev, assistantMessage]);
+      console.log('[CHAT] ASSISTANT_MESSAGE_ADDED');
       handlePlay(assistantMessage.id, assistantMessage.content);
     } catch (error) {
       console.error('Chat error:', error);
