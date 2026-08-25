@@ -5,7 +5,7 @@ import { ChatInput } from './ChatInput';
 import { QuickActions } from './QuickActions';
 import { MoreHorizontal } from 'lucide-react';
 import { motion } from 'motion/react';
-import { tts } from '../../lib/tts';
+import { cleanupTts, tts } from '../../lib/tts';
 
 export function AssistantShell() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -23,7 +23,7 @@ export function AssistantShell() {
 
   useEffect(() => {
      tts.init();
-     return () => tts.stop();
+     return cleanupTts;
   }, []);
 
   const handlePlay = (id: string, text: string) => {

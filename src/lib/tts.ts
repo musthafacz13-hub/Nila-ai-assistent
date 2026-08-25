@@ -1,49 +1,64 @@
+let voices: SpeechSynthesisVoice[] = [];
+
+function refreshVoices() {
+  if ('speechSynthesis' in window) {
+    voices = window.speechSynthesis.getVoices();
+  }
+}
+
 export const tts = {
   speak: (text: string, onEnd: () => void, langPref = 'ml-IN') => {
     if (!('speechSynthesis' in window)) {
-      console.log('[TTS] TTS_ERROR: speechSynthesis not available');
       onEnd();
       return;
     }
 
     window.speechSynthesis.cancel();
-    console.log('[TTS] TTS_STARTED for text length:', text.length);
+    refreshVoices();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-    
-    let selectedVoice = voices.find(v => v.lang.includes(langPref) || v.lang.includes(langPref.split('-')[0]));
-    
-    if (!selectedVoice && langPref === 'ml-IN') {
-       selectedVoice = voices.find(v => v.lang.includes('en-IN')) || voices.find(v => v.lang.includes('en'));
-    }
+    utterance.lang = langPref;
+
+    const language = langPref.toLowerCase();
+    const baseLanguage = language.split('-')[0];
+    const selectedVoice =
+      voices.find((voice) => voice.lang.toLowerCase() === language) ??
+      voices.find((voice) => voice.lang.toLowerCase().startsWith(`${baseLanguage}-`)) ??
+      voices.find((voice) => voice.lang.toLowerCase().startsWith(baseLanguage));
 
     if (selectedVoice) {
       utterance.voice = selectedVoice;
     }
 
-    utterance.onend = () => {
-      console.log('[TTS] TTS_FINISHED');
-      onEnd();
-    };
-    utterance.onerror = (e) => {
-      console.error('[TTS] TTS_ERROR:', e);
+    let completed = false;
+    const finish = () => {
+      if (completed) return;
+      completed = true;
       onEnd();
     };
 
+    utterance.onend = finish;
+    utterance.onerror = finish;
     window.speechSynthesis.speak(utterance);
   },
+
   stop: () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
   },
+
   init: () => {
-     if ('speechSynthesis' in window) {
-        window.speechSynthesis.getVoices();
-        window.speechSynthesis.onvoiceschanged = () => {
-          window.speechSynthesis.getVoices();
-        };
-     }
-  }
+    if ('speechSynthesis' in window) {
+      refreshVoices();
+      window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
+    }
+  },
 };
+
+export function cleanupTts() {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.removeEventListener('voiceschanged', refreshVoices);
+    window.speechSynthesis.cancel();
+  }
+}
