@@ -1,0 +1,8 @@
+## Android SDK path is normally created by Android Studio.
+# sdk.dir=/absolute/path/to/Android/Sdk
+
+supabase.url=
+supabase.anonKey=
+map.styleUrl=
+map.attribution=
+map.satelliteStyleUrl=
